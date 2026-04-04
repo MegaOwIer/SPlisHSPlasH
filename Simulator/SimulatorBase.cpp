@@ -684,6 +684,7 @@ void SimulatorBase::setCommandLineParameter()
 	if (m_paramTokens.size() != 3)
 		return;
 
+	setCommandLineParameter(this);
 	setCommandLineParameter((ParameterObject*)sim);
 	setCommandLineParameter((ParameterObject*)sim->getTimeStep());
 #ifdef USE_DEBUG_TOOLS
