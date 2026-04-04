@@ -83,6 +83,7 @@ namespace SPH
 		char **m_argv;
 		std::string m_windowName;
 		std::vector<std::string> m_paramTokens;
+		std::vector<std::vector<std::string>> m_paramTokenLists;
 		std::function<void()> m_timeStepCB;
 		std::function<void()> m_resetCB;
 		std::vector<std::vector<float>> m_scalarField;

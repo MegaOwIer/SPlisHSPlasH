@@ -255,7 +255,7 @@ void SimulatorBase::init(int argc, char **argv, const std::string &windowName)
 					  "- Example: --param Fluid:viscosity:0.01\n\n"
 					  "- Setting a configuration parameter:\n\t<parameter-name>:<value>\n"
 					  "- Example: --param cflMethod:1\n"
-					  , cxxopts::value<std::string>())
+					  , cxxopts::value<std::vector<std::string>>())
 			;
 
 		options.add_options("invisible")
@@ -300,18 +300,25 @@ void SimulatorBase::init(int argc, char **argv, const std::string &windowName)
 
 		if (result.count("param"))
 		{
-			const string paramStr = result["param"].as<std::string>();
-			Utilities::StringTools::tokenize(paramStr, m_paramTokens, ":");
-
-			// add third element to get a unified method for all parameters
-			if (m_paramTokens.size() == 2)
-				m_paramTokens.insert(m_paramTokens.begin(), "config");
-			if (m_paramTokens.size() != 3)
+			const auto paramStrs = result["param"].as<std::vector<std::string>>();
+			m_paramTokenLists.clear();
+			m_paramTokenLists.reserve(paramStrs.size());
+			for (const auto &paramStr : paramStrs)
 			{
-				LOG_ERR << "--param has wrong syntax!";
-				LOG_ERR << "Example 1: --param Fluid:viscosity:0.01";
-				LOG_ERR << "Example 2: --param cflMethod:1";
-				exit(1);
+				std::vector<std::string> paramTokens;
+				Utilities::StringTools::tokenize(paramStr, paramTokens, ":");
+
+				// add third element to get a unified method for all parameters
+				if (paramTokens.size() == 2)
+					paramTokens.insert(paramTokens.begin(), "config");
+				if (paramTokens.size() != 3)
+				{
+					LOG_ERR << "--param has wrong syntax!";
+					LOG_ERR << "Example 1: --param Fluid:viscosity:0.01";
+					LOG_ERR << "Example 2: --param cflMethod:1";
+					exit(1);
+				}
+				m_paramTokenLists.push_back(std::move(paramTokens));
 			}
 		}
 
@@ -680,6 +687,21 @@ void SimulatorBase::readParameters()
 
 void SimulatorBase::setCommandLineParameter()
 {
+	if (m_paramTokenLists.empty() && m_paramTokens.empty())
+		return;
+
+	if (!m_paramTokenLists.empty())
+	{
+		const auto tokenLists = m_paramTokenLists;
+		m_paramTokenLists.clear();
+		for (const auto &tokens : tokenLists)
+		{
+			m_paramTokens = tokens;
+			setCommandLineParameter();
+		}
+		return;
+	}
+
 	Simulation *sim = Simulation::getCurrent();
 	if (m_paramTokens.size() != 3)
 		return;
